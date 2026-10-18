@@ -1,0 +1,26 @@
+name: Publish APK release
+on:
+  push:
+    branches: [main]
+    paths: ['apk/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release build-<VERSION_CODE>
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VC=$(tr -dc '0-9' < apk/VERSION_CODE)
+          TAG="build-$VC"
+          cp apk/MagicVoiceWriter.apk "MagicVoiceWriter-v1.0.$VC.apk"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "MagicVoiceWriter-v1.0.$VC.apk" --clobber
+          else
+            gh release create "$TAG" "MagicVoiceWriter-v1.0.$VC.apk" \
+              --title "Magic Voice Writer v1.0.$VC" --notes-file apk/NOTES.md --latest
+          fi
